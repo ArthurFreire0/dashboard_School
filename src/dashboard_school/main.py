@@ -195,4 +195,4 @@ def render_dashboard(store_data):
 
 if __name__ == "__main__":
     print(" ta rodando em http://127.0.0.1:8050")
-    app.run_server(debug=True)
+    app.run(debug=True)
