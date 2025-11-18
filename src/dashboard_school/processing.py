@@ -1,12 +1,12 @@
-
+# python
 import io
 import unicodedata
 import pandas as pd
 import numpy as np
 from typing import List, Optional
 
-MEDIA_APROVACAO = 6.0
-DEFAULT_AULAS_TOTAIS = 200
+PASSING_AVERAGE = 6.0
+DEFAULT_TOTAL_CLASSES = 200
 
 SUBJECT_KEYS = [
     "matematica", "portugues", "ingles", "ciencias",
@@ -20,9 +20,6 @@ STANDARD_COLS = [
 ]
 
 
-
-# UTILIDADES
-
 def remove_accents(text: str) -> str:
     if text is None:
         return ""
@@ -32,54 +29,54 @@ def remove_accents(text: str) -> str:
     return "".join([c for c in nfkd if not unicodedata.combining(c)])
 
 
-def normalize_str(s: object) -> str:
-    if pd.isna(s):
+def normalize_str(value: object) -> str:
+    if pd.isna(value):
         return ""
-    s = str(s)
+    s = str(value)
     s = s.replace("\ufeff", "").strip()
     s = remove_accents(s).lower()
     s = s.replace("\t", " ").replace("-", " ").replace("_", " ")
     return " ".join(s.split())
 
 
-def clean_cols(cols: List[str]) -> List[str]:
-    return [normalize_str(c) for c in cols]
+def clean_columns(columns: List[str]) -> List[str]:
+    return [normalize_str(c) for c in columns]
 
 
-def try_read_csv_bytes(b: bytes) -> pd.DataFrame:
-    stream = io.BytesIO(b)
+def try_read_csv_bytes(data: bytes) -> pd.DataFrame:
+    stream = io.BytesIO(data)
     encodings = ["utf-8-sig", "utf-8", "latin1", "cp1252"]
 
     for enc in encodings:
         try:
             stream.seek(0)
             df = pd.read_csv(stream, sep=None, engine="python", encoding=enc)
-            df.columns = clean_cols(df.columns.tolist())
+            df.columns = clean_columns(df.columns.tolist())
             return df
         except Exception:
             pass
 
     stream.seek(0)
     df = pd.read_csv(stream, sep=";", engine="python", encoding="utf-8")
-    df.columns = clean_cols(df.columns.tolist())
+    df.columns = clean_columns(df.columns.tolist())
     return df
 
 
-def normalize_col_for_match(c: str) -> str:
-    return normalize_str(c).replace(" ", "")
+def normalize_column_for_match(column: str) -> str:
+    return normalize_str(column).replace(" ", "")
 
 
 def detect_subject_columns(columns: List[str]):
     mapping = {k: [] for k in SUBJECT_KEYS}
-    col_map = {c: normalize_col_for_match(c) for c in columns}
+    col_map = {c: normalize_column_for_match(c) for c in columns}
 
-    for orig, norm in col_map.items():
-        for subj in SUBJECT_KEYS:
-            subj_norm = subj.replace(" ", "")
-            if subj_norm in norm and "media" not in norm:
-                mapping[subj].append(orig)
-            elif norm.startswith(subj_norm[:3]):
-                mapping[subj].append(orig)
+    for original, normalized in col_map.items():
+        for subject in SUBJECT_KEYS:
+            subject_norm = subject.replace(" ", "")
+            if subject_norm in normalized and "media" not in normalized:
+                mapping[subject].append(original)
+            elif normalized.startswith(subject_norm[:3]):
+                mapping[subject].append(original)
 
     for k in mapping:
         mapping[k] = list(dict.fromkeys(mapping[k]))
@@ -87,84 +84,85 @@ def detect_subject_columns(columns: List[str]):
     return mapping
 
 
-def clean_series_value(s) -> Optional[str]:
-    if pd.isna(s):
+def clean_grade_level_value(value) -> Optional[str]:
+    if pd.isna(value):
         return None
-    s2 = normalize_str(s)
+    s2 = normalize_str(value)
     s2 = s2.replace("serie", "").replace("ano", "").replace(".0", "").strip()
     return None if s2 in ["", "nan", "none"] else s2
 
 
-def find_col_like(columns: List[str], keywords: List[str]) -> Optional[str]:
-    cols_norm = {c: normalize_str(c) for c in columns}
+def find_column_like(columns: List[str], keywords: List[str]) -> Optional[str]:
+    columns_normalized = {c: normalize_str(c) for c in columns}
     for kw in keywords:
-        kwn = normalize_str(kw)
-        for orig, norm in cols_norm.items():
-            if kwn in norm:
-                return orig
+        kw_normalized = normalize_str(kw)
+        for original, normalized in columns_normalized.items():
+            if kw_normalized in normalized:
+                return original
     return None
 
 
+def process_raw_dataframe_to_standard(raw_df: pd.DataFrame) -> pd.DataFrame:
+    original_columns = list(raw_df.columns)
 
-# PROCESSAMENTO PRINCIPAL
+    name_column = find_column_like(original_columns, ["nome", "aluno", "name"])
+    class_column = find_column_like(original_columns, ["turma", "sala", "classe"])
+    grade_level_column = find_column_like(original_columns, ["serie", "ano"])
 
-
-def process_raw_df_to_standard(df_raw: pd.DataFrame) -> pd.DataFrame:
-    original_cols = list(df_raw.columns)
-
-    nome_col = find_col_like(original_cols, ["nome", "aluno", "name"])
-    turma_col = find_col_like(original_cols, ["turma", "sala", "classe"])
-    serie_col = find_col_like(original_cols, ["serie", "ano"])
-
-    if nome_col is None or turma_col is None:
+    if name_column is None or class_column is None:
         raise ValueError("CSV precisa conter colunas de NOME e TURMA.")
 
-    df_clean = df_raw.copy()
+    cleaned_df = raw_df.copy()
 
-    for c in df_clean.columns:
-        df_clean[c] = (
-            df_clean[c].astype(str)
+    for col in cleaned_df.columns:
+        cleaned_df[col] = (
+            cleaned_df[col].astype(str)
             .str.replace(",", ".")
             .str.strip()
         )
 
-    subj_map = detect_subject_columns(list(df_clean.columns))
+    subject_map = detect_subject_columns(list(cleaned_df.columns))
 
-    df_out = pd.DataFrame()
-    df_out["nome"] = df_clean[nome_col]
-    df_out["turma"] = df_clean[turma_col]
-    df_out["serie"] = df_clean[serie_col].apply(clean_series_value) if serie_col else None
+    output_df = pd.DataFrame()
+    output_df["nome"] = cleaned_df[name_column]
+    output_df["turma"] = cleaned_df[class_column]
+    output_df["serie"] = cleaned_df[grade_level_column].apply(clean_grade_level_value) if grade_level_column else None
 
-    for subj in SUBJECT_KEYS:
-        cols = subj_map.get(subj, [])
+    for subject in SUBJECT_KEYS:
+        cols = subject_map.get(subject, [])
         if cols:
-            df_out[subj] = df_clean[cols].apply(pd.to_numeric, errors="coerce").mean(axis=1).round(1)
+            output_df[subject] = cleaned_df[cols].apply(pd.to_numeric, errors="coerce").mean(axis=1).round(1)
         else:
-            df_out[subj] = np.nan
+            output_df[subject] = np.nan
 
-    df_out["media_geral"] = df_out[SUBJECT_KEYS].mean(axis=1).round(1)
+    output_df["media_geral"] = output_df[SUBJECT_KEYS].mean(axis=1).round(1)
 
-    # faltas e aulas
-    faltas_col = find_col_like(original_cols, ["falta"])
-    aulas_col = find_col_like(original_cols, ["aulas", "aulas tot", "carga horaria"])
+    absences_column = find_column_like(original_columns, ["falta"])
+    total_classes_column = find_column_like(original_columns, ["aulas", "aulas tot", "carga horaria"])
 
-    df_out["faltas"] = pd.to_numeric(df_clean[faltas_col], errors="coerce") if faltas_col else np.nan
-    df_out["aulas_ano"] = pd.to_numeric(df_clean[aulas_col], errors="coerce") if aulas_col else DEFAULT_AULAS_TOTAIS
-
-    # presença
-    mask = (
-        df_out["faltas"].notna()
-        & df_out["aulas_ano"].notna()
-        & (df_out["aulas_ano"] != 0)
+    output_df["faltas"] = pd.to_numeric(cleaned_df[absences_column], errors="coerce") if absences_column else np.nan
+    output_df["aulas_ano"] = (
+        pd.to_numeric(cleaned_df[total_classes_column], errors="coerce")
+        if total_classes_column else DEFAULT_TOTAL_CLASSES
     )
-    df_out["presenca"] = np.where(mask,
-                                  ((1 - df_out["faltas"] / df_out["aulas_ano"]) * 100).round(1),
-                                  np.nan)
 
-    df_out["status"] = df_out["media_geral"].apply(lambda x: "Aprovado" if x >= MEDIA_APROVACAO else "Reprovado")
+    presence_mask = (
+        output_df["faltas"].notna()
+        & output_df["aulas_ano"].notna()
+        & (output_df["aulas_ano"] != 0)
+    )
+    output_df["presenca"] = np.where(
+        presence_mask,
+        ((1 - output_df["faltas"] / output_df["aulas_ano"]) * 100).round(1),
+        np.nan
+    )
 
-    for c in STANDARD_COLS:
-        if c not in df_out.columns:
-            df_out[c] = np.nan
+    output_df["status"] = output_df["media_geral"].apply(
+        lambda x: "Aprovado" if x >= PASSING_AVERAGE else "Reprovado"
+    )
 
-    return df_out[STANDARD_COLS].reset_index(drop=True)
+    for col in STANDARD_COLS:
+        if col not in output_df.columns:
+            output_df[col] = np.nan
+
+    return output_df[STANDARD_COLS].reset_index(drop=True)
