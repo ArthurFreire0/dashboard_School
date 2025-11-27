@@ -3,20 +3,20 @@ from dash import html, dcc
 def create_layout():
     return html.Div([
         html.Div([
-            html.H1("📊 Dashboard Escolar",
+            html.H1("🎓 Sistema de Análise Acadêmica Universitária",
                    style={
                        "textAlign": "center",
-                       "color": "#1e3a8a",
+                       "color": "#ffffff",
                        "fontFamily": "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
                        "marginBottom": "10px",
-                       "fontSize": "42px",
+                       "fontSize": "38px",
                        "fontWeight": "700"
                    }),
-            html.P("Sistema de Análise de Desempenho Acadêmico",
+            html.P("Análise de Desempenho, Frequência e Previsão de Evasão de Estudantes",
                   style={
                       "textAlign": "center",
-                      "color": "#64748b",
-                      "fontSize": "18px",
+                      "color": "#e0e7ff",
+                      "fontSize": "17px",
                       "marginTop": "0",
                       "marginBottom": "30px",
                       "fontFamily": "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
@@ -33,36 +33,38 @@ def create_layout():
             dcc.Upload(
                 id="upload-csv",
                 children=html.Div([
-                    html.Div("📁", style={"fontSize": "48px", "marginBottom": "15px"}),
-                    html.H3("Envie seu arquivo CSV",
+                    html.Div("📄", style={"fontSize": "48px", "marginBottom": "15px"}),
+                    html.H3("Envie os dados em CSV",
                            style={
                                "margin": "0",
                                "color": "#1e293b",
                                "fontFamily": "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
                                "fontWeight": "600"
                            }),
-                    html.P("Arraste o arquivo aqui ou clique para selecionar",
+                    html.P("Arraste o arquivo CSV aqui ou clique para selecionar",
                           style={
-                              "fontSize": "16px",
-                              "margin": "10px 0 0",
+                              "fontSize": "15px",
+                              "margin": "10px 0 5px",
                               "color": "#64748b",
                               "fontFamily": "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
+                          }),
+                    html.P("Formato esperado: id_aluno, curso, periodo_letivo, disciplina, nota_final, frequencia_pct, status_pagamento, status_disciplina, nota_avaliacao_curso, status_matricula",
+                          style={
+                              "fontSize": "12px",
+                              "margin": "5px 0 0",
+                              "color": "#94a3b8",
+                              "fontFamily": "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+                              "fontStyle": "italic"
                           })
-                ]),
-                style={
-                    "width": "100%",
-                    "height": "180px",
-                    "borderWidth": "2px",
-                    "borderStyle": "dashed",
-                    "borderColor": "#cbd5e1",
+                ], style={
                     "borderRadius": "16px",
                     "textAlign": "center",
                     "backgroundColor": "#ffffff",
                     "cursor": "pointer",
-                    "padding": "30px 20px",
+                    "height": "200px",
                     "transition": "all 0.3s ease",
                     "boxShadow": "0 1px 3px rgba(0,0,0,0.1)"
-                },
+                }),
                 multiple=False
             ),
 

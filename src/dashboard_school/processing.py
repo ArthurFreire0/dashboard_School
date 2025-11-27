@@ -1,28 +1,14 @@
-# python
-import io
-import unicodedata
 import pandas as pd
 import numpy as np
-from typing import List, Optional
+import io
+import unicodedata
 
-PASSING_AVERAGE = 6.0
-DEFAULT_TOTAL_CLASSES = 200
-
-SUBJECT_KEYS = [
-    "matematica", "portugues", "ingles", "ciencias",
-    "historia", "geografia", "artes"
-]
-
-STANDARD_COLS = [
-    "nome", "turma", "serie",
-] + SUBJECT_KEYS + [
-    "media_geral", "faltas", "aulas_ano", "presenca", "status"
-]
+PASSING_GRADE = 6.0
+MINIMUM_ATTENDANCE = 75.0
 
 
 def remove_accents(text: str) -> str:
-    if text is None:
-        return ""
+    """Remove accents from text."""
     if not isinstance(text, str):
         text = str(text)
     nfkd = unicodedata.normalize("NFKD", text)
@@ -30,139 +16,242 @@ def remove_accents(text: str) -> str:
 
 
 def normalize_str(value: object) -> str:
+    """Normalize string values for comparison."""
     if pd.isna(value):
         return ""
     s = str(value)
     s = s.replace("\ufeff", "").strip()
     s = remove_accents(s).lower()
-    s = s.replace("\t", " ").replace("-", " ").replace("_", " ")
-    return " ".join(s.split())
-
-
-def clean_columns(columns: List[str]) -> List[str]:
-    return [normalize_str(c) for c in columns]
+    s = s.replace("\t", " ").replace("-", "_").replace(" ", "_")
+    return s
 
 
 def try_read_csv_bytes(data: bytes) -> pd.DataFrame:
+    """Try to read CSV from bytes using different encodings and separators."""
     stream = io.BytesIO(data)
-    encodings = ["utf-8-sig", "utf-8", "latin1", "cp1252"]
+    encodings = ["utf-8-sig", "utf-8", "latin1", "cp1252", "iso-8859-1"]
+    separators = [",", ";", "\t"]
 
-    for enc in encodings:
-        try:
-            stream.seek(0)
-            df = pd.read_csv(stream, sep=None, engine="python", encoding=enc)
-            df.columns = clean_columns(df.columns.tolist())
-            return df
-        except Exception:
-            pass
+    for encoding in encodings:
+        for sep in separators:
+            try:
+                stream.seek(0)
+                df = pd.read_csv(stream, sep=sep, encoding=encoding, engine="python")
 
+                # Check if we got valid data (more than 1 column)
+                if len(df.columns) > 1:
+                    print(f"✅ Successfully read CSV with encoding={encoding}, separator='{sep}'")
+                    return df
+            except Exception as e:
+                continue
+
+    # Last resort - try default pandas read
     stream.seek(0)
-    df = pd.read_csv(stream, sep=";", engine="python", encoding="utf-8")
-    df.columns = clean_columns(df.columns.tolist())
+    return pd.read_csv(stream)
+
+
+def map_admission_type(value) -> str:
+    """Map admission type to standard format."""
+    if pd.isna(value):
+        return "vestibular"
+
+    normalized = normalize_str(value)
+
+    if "externa" in normalized or "external" in normalized:
+        return "transferencia_externa"
+    elif "interna" in normalized or "internal" in normalized:
+        return "transferencia_interna"
+    elif "bolsa" in normalized or "scholarship" in normalized or "promocao" in normalized:
+        return "bolsista"
+    elif "vestibular" in normalized or "entrance" in normalized:
+        return "vestibular"
+    else:
+        return "vestibular"
+
+
+def map_enrollment_status(value) -> str:
+    """Map enrollment status to standard format."""
+    if pd.isna(value):
+        return "ativo"
+
+    normalized = normalize_str(value)
+
+    if "evadido" in normalized or "dropped" in normalized or "desistente" in normalized:
+        return "evadido"
+    elif "trancado" in normalized or "suspended" in normalized or "trancamento" in normalized:
+        return "trancado"
+    elif "ativo" in normalized or "active" in normalized or "matriculado" in normalized:
+        return "ativo"
+    else:
+        return "ativo"
+
+
+def map_discipline_status(value) -> str:
+    """Map discipline status to standard format."""
+    if pd.isna(value):
+        return "em_andamento"
+
+    normalized = normalize_str(value)
+
+    if "aprovado" in normalized or "approved" in normalized or "passed" in normalized:
+        return "aprovado"
+    elif "reprovado" in normalized or "failed" in normalized or "reprovacao" in normalized:
+        return "reprovado"
+    elif "andamento" in normalized or "progress" in normalized or "cursando" in normalized:
+        return "em_andamento"
+    else:
+        return "em_andamento"
+
+
+def map_payment_status(value) -> str:
+    """Map payment status to standard format."""
+    if pd.isna(value):
+        return "pendente"
+
+    normalized = normalize_str(value)
+
+    if "pago" in normalized or "paid" in normalized or "quitado" in normalized:
+        return "pago"
+    elif "atrasado" in normalized or "overdue" in normalized or "late" in normalized or "vencido" in normalized:
+        return "atrasado"
+    elif "pendente" in normalized or "pending" in normalized:
+        return "pendente"
+    else:
+        return "pendente"
+
+
+def process_university_data(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.copy()
+
+    df.columns = [normalize_str(col) for col in df.columns]
+
+    column_mapping = {}
+    for col in df.columns:
+        col_lower = col.lower()
+        if ("avaliacao" in col_lower and "curso" in col_lower) or "nota_avaliacao_curso" in col_lower:
+            column_mapping[col] = "course_evaluation"
+        elif ("nota" in col_lower and "final" in col_lower) or col_lower == "nota_final":
+            column_mapping[col] = "final_grade"
+        elif "id" in col_lower and "aluno" in col_lower:
+            column_mapping[col] = "student_id"
+        elif "curso" in col_lower and "avaliacao" not in col_lower:
+            column_mapping[col] = "course"
+        elif "periodo" in col_lower or "semestre" in col_lower or "letivo" in col_lower:
+            column_mapping[col] = "semester"
+        elif "disciplina" in col_lower and "status" not in col_lower:
+            column_mapping[col] = "discipline"
+        elif "frequencia" in col_lower or "attendance" in col_lower:
+            column_mapping[col] = "attendance_pct"
+        elif ("status" in col_lower and "pagamento" in col_lower) or "pagamento" in col_lower:
+            column_mapping[col] = "payment_status"
+        elif "status" in col_lower and "disciplina" in col_lower:
+            column_mapping[col] = "discipline_status"
+        elif ("avaliacao" in col_lower and "curso" in col_lower) or ("nota" in col_lower and "curso" in col_lower):
+            # Redundant rule retained for robustness but will be overridden by the first condition
+            column_mapping[col] = "course_evaluation"
+        elif "status" in col_lower and "matricula" in col_lower:
+            column_mapping[col] = "enrollment_status"
+        elif "forma" in col_lower and "ingresso" in col_lower:
+            column_mapping[col] = "admission_type"
+        elif "ingresso" in col_lower or "admission" in col_lower:
+            column_mapping[col] = "admission_type"
+        elif col_lower == "nota":
+            column_mapping[col] = "final_grade"
+
+    df = df.rename(columns=column_mapping)
+
+    for target in ["final_grade", "attendance_pct", "course_evaluation"]:
+        if (target in df.columns) and isinstance(df[target], pd.DataFrame):
+            temp = df[target]
+            df[target] = temp.apply(lambda row: next((x for x in row if pd.notna(x)), np.nan), axis=1)
+
+    required = ["student_id", "course", "semester", "discipline", "final_grade",
+                "attendance_pct", "payment_status", "discipline_status",
+                "course_evaluation", "enrollment_status"]
+
+    for col in required:
+        if col not in df.columns:
+            df[col] = np.nan
+
+    if "admission_type" not in df.columns:
+        df["admission_type"] = "vestibular"
+
+    df["student_id"] = df["student_id"].astype(str)
+    df["course"] = df["course"].astype(str)
+    df["semester"] = df["semester"].astype(str)
+    df["discipline"] = df["discipline"].astype(str)
+
+    for num_col in ["final_grade", "attendance_pct", "course_evaluation"]:
+        if isinstance(df[num_col], pd.DataFrame):
+            df[num_col] = df[num_col].apply(lambda row: next((x for x in row if pd.notna(x)), np.nan), axis=1)
+        df[num_col] = pd.to_numeric(df[num_col], errors="coerce")
+
+    df["admission_type"] = df["admission_type"].apply(map_admission_type)
+    df["enrollment_status"] = df["enrollment_status"].apply(map_enrollment_status)
+    df["discipline_status"] = df["discipline_status"].apply(map_discipline_status)
+    df["payment_status"] = df["payment_status"].apply(map_payment_status)
+
+    df["is_passing"] = (df["final_grade"] >= PASSING_GRADE) & (df["attendance_pct"] >= MINIMUM_ATTENDANCE)
+    df["at_risk"] = (
+        (df["final_grade"] < PASSING_GRADE) |
+        (df["attendance_pct"] < MINIMUM_ATTENDANCE) |
+        (df["payment_status"] == "atrasado")
+    )
+
     return df
 
 
-def normalize_column_for_match(column: str) -> str:
-    return normalize_str(column).replace(" ", "")
+def calculate_churn_probability(student_data: pd.DataFrame) -> float:
+    """Calculate churn probability for a student based on their records."""
+    if student_data.empty:
+        return 0.0
+
+    risk_score = 0.0
+
+    avg_grade = student_data["final_grade"].mean()
+    if pd.notna(avg_grade):
+        if avg_grade < 4.0:
+            risk_score += 30
+        elif avg_grade < 6.0:
+            risk_score += 20
+        elif avg_grade < 7.0:
+            risk_score += 10
+
+    avg_attendance = student_data["attendance_pct"].mean()
+    if pd.notna(avg_attendance):
+        if avg_attendance < 50:
+            risk_score += 25
+        elif avg_attendance < 75:
+            risk_score += 15
+        elif avg_attendance < 85:
+            risk_score += 5
+
+    payment_issues = (student_data["payment_status"] == "atrasado").sum()
+    total_records = len(student_data)
+    payment_issue_rate = payment_issues / total_records if total_records > 0 else 0
+    risk_score += payment_issue_rate * 20
+
+    failed_count = (student_data["discipline_status"] == "reprovado").sum()
+    fail_rate = failed_count / total_records if total_records > 0 else 0
+    risk_score += fail_rate * 15
+
+    avg_evaluation = student_data["course_evaluation"].mean()
+    if pd.notna(avg_evaluation):
+        if avg_evaluation <= 3:
+            risk_score += 10
+        elif avg_evaluation <= 5:
+            risk_score += 5
+
+    churn_probability = min(risk_score / 100, 1.0)
+
+    return churn_probability
 
 
-def detect_subject_columns(columns: List[str]):
-    mapping = {k: [] for k in SUBJECT_KEYS}
-    col_map = {c: normalize_column_for_match(c) for c in columns}
-
-    for original, normalized in col_map.items():
-        for subject in SUBJECT_KEYS:
-            subject_norm = subject.replace(" ", "")
-            if subject_norm in normalized and "media" not in normalized:
-                mapping[subject].append(original)
-            elif normalized.startswith(subject_norm[:3]):
-                mapping[subject].append(original)
-
-    for k in mapping:
-        mapping[k] = list(dict.fromkeys(mapping[k]))
-
-    return mapping
-
-
-def clean_grade_level_value(value) -> Optional[str]:
-    if pd.isna(value):
-        return None
-    s2 = normalize_str(value)
-    s2 = s2.replace("serie", "").replace("ano", "").replace(".0", "").strip()
-    return None if s2 in ["", "nan", "none"] else s2
-
-
-def find_column_like(columns: List[str], keywords: List[str]) -> Optional[str]:
-    columns_normalized = {c: normalize_str(c) for c in columns}
-    for kw in keywords:
-        kw_normalized = normalize_str(kw)
-        for original, normalized in columns_normalized.items():
-            if kw_normalized in normalized:
-                return original
-    return None
-
-
-def process_raw_dataframe_to_standard(raw_df: pd.DataFrame) -> pd.DataFrame:
-    original_columns = list(raw_df.columns)
-
-    name_column = find_column_like(original_columns, ["nome", "aluno", "name"])
-    class_column = find_column_like(original_columns, ["turma", "sala", "classe"])
-    grade_level_column = find_column_like(original_columns, ["serie", "ano"])
-
-    if name_column is None or class_column is None:
-        raise ValueError("CSV precisa conter colunas de NOME e TURMA.")
-
-    cleaned_df = raw_df.copy()
-
-    for col in cleaned_df.columns:
-        cleaned_df[col] = (
-            cleaned_df[col].astype(str)
-            .str.replace(",", ".")
-            .str.strip()
-        )
-
-    subject_map = detect_subject_columns(list(cleaned_df.columns))
-
-    output_df = pd.DataFrame()
-    output_df["nome"] = cleaned_df[name_column]
-    output_df["turma"] = cleaned_df[class_column]
-    output_df["serie"] = cleaned_df[grade_level_column].apply(clean_grade_level_value) if grade_level_column else None
-
-    for subject in SUBJECT_KEYS:
-        cols = subject_map.get(subject, [])
-        if cols:
-            output_df[subject] = cleaned_df[cols].apply(pd.to_numeric, errors="coerce").mean(axis=1).round(1)
-        else:
-            output_df[subject] = np.nan
-
-    output_df["media_geral"] = output_df[SUBJECT_KEYS].mean(axis=1).round(1)
-
-    absences_column = find_column_like(original_columns, ["falta"])
-    total_classes_column = find_column_like(original_columns, ["aulas", "aulas tot", "carga horaria"])
-
-    output_df["faltas"] = pd.to_numeric(cleaned_df[absences_column], errors="coerce") if absences_column else np.nan
-    output_df["aulas_ano"] = (
-        pd.to_numeric(cleaned_df[total_classes_column], errors="coerce")
-        if total_classes_column else DEFAULT_TOTAL_CLASSES
-    )
-
-    presence_mask = (
-        output_df["faltas"].notna()
-        & output_df["aulas_ano"].notna()
-        & (output_df["aulas_ano"] != 0)
-    )
-    output_df["presenca"] = np.where(
-        presence_mask,
-        ((1 - output_df["faltas"] / output_df["aulas_ano"]) * 100).round(1),
-        np.nan
-    )
-
-    output_df["status"] = output_df["media_geral"].apply(
-        lambda x: "Aprovado" if x >= PASSING_AVERAGE else "Reprovado"
-    )
-
-    for col in STANDARD_COLS:
-        if col not in output_df.columns:
-            output_df[col] = np.nan
-
-    return output_df[STANDARD_COLS].reset_index(drop=True)
+def get_churn_risk_level(probability: float) -> str:
+    """Get risk level based on churn probability."""
+    if probability >= 0.7:
+        return "high"
+    elif probability >= 0.4:
+        return "medium"
+    else:
+        return "low"
