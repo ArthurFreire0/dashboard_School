@@ -285,6 +285,7 @@ def update_dashboard(data_json):
         failure_bar = dashboard.build_failure_rate_by_discipline_bar(df)
         attendance_scatter = dashboard.build_approval_vs_attendance_scatter(df)
         churn_gauge = dashboard.build_churn_risk_gauge(df)
+        course_eval_gauge = dashboard.build_course_evaluation_gauge(df)
 
         churn_table = dashboard.build_churn_risk_table(df)
         main_table = dashboard.build_main_data_table(df)
@@ -302,7 +303,8 @@ def update_dashboard(data_json):
                     'padding': '20px',
                     'borderRadius': '12px',
                     'boxShadow': '0 2px 8px rgba(0,0,0,0.1)',
-                    'width': '48%',
+                    'flex': '1',
+                    'minWidth': '300px',
                     'overflow': 'hidden'
                 }),
 
@@ -315,14 +317,30 @@ def update_dashboard(data_json):
                     'padding': '20px',
                     'borderRadius': '12px',
                     'boxShadow': '0 2px 8px rgba(0,0,0,0.1)',
-                    'width': '48%',
+                    'flex': '1',
+                    'minWidth': '300px',
+                    'overflow': 'hidden'
+                }),
+
+                html.Div([
+                    html.H2("⭐ Avaliação do Curso pelos Alunos",
+                           style={'fontSize': '20px', 'marginBottom': '15px', 'color': '#1e293b'}),
+                    dcc.Graph(figure=course_eval_gauge, config={'displayModeBar': False, 'responsive': False}, style={'height': '350px'})
+                ], style={
+                    'backgroundColor': '#ffffff',
+                    'padding': '20px',
+                    'borderRadius': '12px',
+                    'boxShadow': '0 2px 8px rgba(0,0,0,0.1)',
+                    'flex': '1',
+                    'minWidth': '300px',
                     'overflow': 'hidden'
                 })
             ], style={
                 'display': 'flex',
                 'justifyContent': 'space-between',
                 'gap': '20px',
-                'marginBottom': '30px'
+                'marginBottom': '30px',
+                'flexWrap': 'wrap'
             }),
 
             html.Div([

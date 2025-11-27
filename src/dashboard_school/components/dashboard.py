@@ -358,6 +358,69 @@ class DashboardBuilder:
             ]
         )
 
+    def build_course_evaluation_gauge(self, df: pd.DataFrame):
+        """Build gauge chart showing average course evaluation with color indicators."""
+        if df.empty or 'course_evaluation' not in df.columns:
+            avg_evaluation = 0
+        else:
+            # Filter out null values
+            df_with_eval = df[df['course_evaluation'].notna()]
+            if df_with_eval.empty:
+                avg_evaluation = 0
+            else:
+                avg_evaluation = df_with_eval['course_evaluation'].mean()
+
+        # Determine color and reference based on threshold
+        if avg_evaluation >= 6:
+            bar_color = "#10b981"  # Green - Good
+            delta_color = "green"
+        elif avg_evaluation >= 5.5:
+            bar_color = "#f59e0b"  # Yellow/Orange - Warning
+            delta_color = "orange"
+        else:
+            bar_color = "#ef4444"  # Red - Bad
+            delta_color = "red"
+
+        fig = go.Figure(go.Indicator(
+            mode="gauge+number+delta",
+            value=avg_evaluation,
+            domain={'x': [0, 1], 'y': [0, 1]},
+            title={'text': "Avaliação Média do Curso", 'font': {'size': 18, 'family': FONT_FAMILY}},
+            delta={
+                'reference': 6,
+                'increasing': {'color': "green"},
+                'decreasing': {'color': "red"},
+                'suffix': ' pts'
+            },
+            number={'suffix': '/10', 'font': {'size': 40}},
+            gauge={
+                'axis': {'range': [0, 10], 'tickwidth': 1, 'tickcolor': "darkblue"},
+                'bar': {'color': bar_color, 'thickness': 0.75},
+                'bgcolor': "white",
+                'borderwidth': 2,
+                'bordercolor': "gray",
+                'steps': [
+                    {'range': [0, 5.5], 'color': '#fecaca'},      # Red zone - Bad
+                    {'range': [5.5, 6], 'color': '#fed7aa'},      # Orange zone - Warning
+                    {'range': [6, 10], 'color': '#d1fae5'}        # Green zone - Good
+                ],
+                'threshold': {
+                    'line': {'color': "#3b82f6", 'width': 4},
+                    'thickness': 0.75,
+                    'value': 6
+                }
+            }
+        ))
+
+        fig.update_layout(
+            font={'family': FONT_FAMILY},
+            paper_bgcolor='rgba(0,0,0,0)',
+            height=350,
+            margin=dict(t=40, b=20, l=20, r=20)
+        )
+
+        return fig
+
     def build_statistics_cards(self, df: pd.DataFrame):
         """Build statistics summary cards."""
         if df.empty:
@@ -368,6 +431,24 @@ class DashboardBuilder:
         avg_grade = df['final_grade'].mean()
         avg_attendance = df['attendance_pct'].mean()
         failure_rate = (df['discipline_status'] == 'reprovado').sum() / len(df) * 100 if len(df) > 0 else 0
+
+        # Calculate average course evaluation
+        if 'course_evaluation' in df.columns:
+            df_with_eval = df[df['course_evaluation'].notna()]
+            avg_evaluation = df_with_eval['course_evaluation'].mean() if not df_with_eval.empty else None
+        else:
+            avg_evaluation = None
+
+        # Determine color for evaluation based on threshold
+        if avg_evaluation is not None:
+            if avg_evaluation >= 6:
+                eval_color = '#10b981'  # Green - Good
+            elif avg_evaluation >= 5.5:
+                eval_color = '#f59e0b'  # Yellow/Orange - Warning
+            else:
+                eval_color = '#ef4444'  # Red - Bad
+        else:
+            eval_color = '#94a3b8'  # Gray - No data
 
         cards_data = [
             {
@@ -393,6 +474,12 @@ class DashboardBuilder:
                 'value': f'{avg_attendance:.1f}%' if pd.notna(avg_attendance) else 'N/A',
                 'icon': '📅',
                 'color': '#06b6d4'
+            },
+            {
+                'title': 'Avaliação do Curso',
+                'value': f'{avg_evaluation:.2f}/10' if avg_evaluation is not None else 'N/A',
+                'icon': '⭐',
+                'color': eval_color
             },
             {
                 'title': 'Taxa de Reprovação',
