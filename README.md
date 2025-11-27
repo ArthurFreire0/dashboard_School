@@ -15,29 +15,12 @@ Ferramenta simples para analisar dados acadêmicos e identificar:
 ```pwsh
 # Instalar dependências
 uv sync
+uv pip install -e .
 
 # Executar o dashboard
-python src/dashboard_school/main.py
+uv run -m dashboard_school.main
 ```
 
-### Usando pip
-```pwsh
-# Criar e ativar ambiente virtual (Windows PowerShell)
-python -m venv venv
-.\venv\Scripts\Activate.ps1
-
-# Instalar dependências
-pip install dash pandas plotly sqlalchemy
-
-# Executar o dashboard
-python src/dashboard_school/main.py
-```
-
-## Acessar
-Após iniciar, abra no navegador:
-```
-http://localhost:8050
-```
 
 ## Como usar
 1. Faça upload do seu arquivo CSV na interface.
