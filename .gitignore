@@ -1,36 +1,68 @@
-# Byte-compiled / optimized / compiled files
+# Python
 __pycache__/
-*.pyc
-*.pyd
-*.pyo
-*.egg-info/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
 .eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
 
-# Virtual environment
+# Virtual environments
 venv/
-.venv/
 env/
-.env/
+ENV/
+.venv
 
-# Editor/IDE specific files
-.idea/  # PyCharm
-.vscode/ # VS Code
-*.sublime-project
-*.sublime-workspace
-
-# OS generated files
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
 .DS_Store
+
+# Database
+database/
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+*.log
+
+# Test coverage
+.coverage
+htmlcov/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Environment variables
+.env
+.env.local
+
+# UV
+.uv/
+
+# Uploads
+uploads/*
+!uploads/.gitkeep
+src/dashboard_school/uploads/*
+!src/dashboard_school/uploads/.gitkeep
+
+# OS
 Thumbs.db
 
-# Testing
-.pytest_cache/
-htmlcov/
-.coverage
-
-# Miscellaneous
-*.log
-*.sqlite3
-media/  # For Django projects, if media files are uploaded by users
-
-# Reports
-reports/  # Directory for test or coverage reports
