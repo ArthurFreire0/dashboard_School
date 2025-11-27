@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import io
 import unicodedata
+import re
 
 PASSING_GRADE = 6.0
 MINIMUM_ATTENDANCE = 75.0
@@ -22,7 +23,9 @@ def normalize_str(value: object) -> str:
     s = str(value)
     s = s.replace("\ufeff", "").strip()
     s = remove_accents(s).lower()
-    s = s.replace("\t", " ").replace("-", "_").replace(" ", "_")
+    s = s.replace("\t", " ").replace("-", "_")
+    # Replace multiple consecutive spaces with single underscore
+    s = re.sub(r'\s+', '_', s)
     return s
 
 
