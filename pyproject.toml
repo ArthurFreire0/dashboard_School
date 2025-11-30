@@ -1,8 +1,8 @@
 [project]
 name = "dashboard_school"
 version = "0.1.0"
-description = "Add your description here"
-requires-python = ">=3.13"
+description = "Dashboard de Análise Acadêmica Universitária"
+requires-python = ">=3.10"
 dependencies = [
     "dash>=3.3.0",
     "pandas>=2.3.3",
@@ -10,7 +10,11 @@ dependencies = [
     "plotly>=6.5.0",
     "pytest>=9.0.1",
     "scikit-learn>=1.7.2",
-    "sqlalchemy>=2.0.44",
 ]
-[tool.uv.sources]
-dashboard_school = { path = "src/dashboard_school" }
+
+# DIZER AO PYPI/UV QUE O PACOTE ESTÁ DENTRO DE "src"
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
