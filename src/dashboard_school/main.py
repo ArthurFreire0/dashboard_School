@@ -127,7 +127,7 @@ def update_dashboard(data_json):
             ], style={'display': 'flex', 'gap': '20px', 'flexWrap': 'wrap'}),
 
             html.Div([
-                html.H2("🎯 Reprovação por Disciplina"),
+                html.H2("🎯 Reprovação por Disciplinas"),
                 dcc.Graph(figure=failure_bar, config={'displayModeBar': False})
             ], style={'backgroundColor': 'white', 'padding': '20px', 'borderRadius': '12px'}),
 
