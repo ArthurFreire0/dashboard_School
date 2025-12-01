@@ -29,6 +29,7 @@ def save_data_to_database(df):
     """Save processed data to database."""
     session = SessionLocal()
     disciplines_dict = {}
+
     for discipline_name in df['discipline'].unique():
         if discipline_name and str(discipline_name) != 'nan':
             discipline = session.query(Discipline).filter_by(name=discipline_name).first()
@@ -38,90 +39,89 @@ def save_data_to_database(df):
                 session.flush()
             disciplines_dict[discipline_name] = discipline.id
 
-        students_dict = {}
-        for _, row in df.drop_duplicates(subset=['student_id']).iterrows():
-            student_id = str(row['student_id'])
-            if student_id and student_id != 'nan':
-                student = session.query(Student).filter_by(student_id=student_id).first()
-                if not student:
-                    admission_map = {
-                        'transferencia_externa': AdmissionTypeEnum.EXTERNAL_TRANSFER,
-                        'transferencia_interna': AdmissionTypeEnum.INTERNAL_TRANSFER,
-                        'bolsista': AdmissionTypeEnum.SCHOLARSHIP,
-                        'vestibular': AdmissionTypeEnum.ENTRANCE_EXAM,
-                        'promocao': AdmissionTypeEnum.SCHOLARSHIP
-                    }
-                    admission_type = admission_map.get(
-                        row.get('admission_type', 'vestibular'),
-                        AdmissionTypeEnum.ENTRANCE_EXAM
-                    )
+    # Process students
+    students_dict = {}
+    unique_students = df.drop_duplicates(subset=['student_id'])
 
-                    # Parse enrollment status
-                    enrollment_map = {
-                        'ativo': EnrollmentStatusEnum.ACTIVE,
-                        'evadido': EnrollmentStatusEnum.DROPPED,
-                        'trancado': EnrollmentStatusEnum.SUSPENDED
-                    }
-                    enrollment_status = enrollment_map.get(
-                        row.get('enrollment_status', 'ativo'),
-                        EnrollmentStatusEnum.ACTIVE
-                    )
-
-                    student = Student(
-                        student_id=student_id,
-                        course=str(row.get('course', '')),
-                        admission_type=admission_type,
-                        enrollment_status=enrollment_status
-                    )
-                    session.add(student)
-                    session.flush()
-                students_dict[student_id] = student.id
-
-        for _, row in df.iterrows():
-            student_id_str = str(row['student_id'])
-            discipline_name = row['discipline']
-
-            if (student_id_str in students_dict and
-                discipline_name and str(discipline_name) != 'nan' and
-                discipline_name in disciplines_dict):
-
-                payment_map = {
-                    'pago': PaymentStatusEnum.PAID,
-                    'pendente': PaymentStatusEnum.PENDING,
-                    'atrasado': PaymentStatusEnum.OVERDUE
+    for idx, row in unique_students.iterrows():
+        student_id = str(row['student_id'])
+        if student_id and student_id != 'nan':
+            student = session.query(Student).filter_by(student_id=student_id).first()
+            if not student:
+                admission_map = {
+                    'transferencia_externa': AdmissionTypeEnum.EXTERNAL_TRANSFER,
+                    'transferencia_interna': AdmissionTypeEnum.INTERNAL_TRANSFER,
+                    'bolsista': AdmissionTypeEnum.SCHOLARSHIP,
+                    'vestibular': AdmissionTypeEnum.ENTRANCE_EXAM,
+                    'promocao': AdmissionTypeEnum.SCHOLARSHIP
                 }
-                payment_status = payment_map.get(
-                    row.get('payment_status', 'pendente'),
-                    PaymentStatusEnum.PENDING
+                admission_type = admission_map.get(
+                    row.get('admission_type', 'vestibular'),
+                    AdmissionTypeEnum.ENTRANCE_EXAM
                 )
 
-                discipline_status_map = {
-                    'aprovado': DisciplineStatusEnum.APPROVED,
-                    'reprovado': DisciplineStatusEnum.FAILED,
-                    'em_andamento': DisciplineStatusEnum.IN_PROGRESS
+                enrollment_map = {
+                    'ativo': EnrollmentStatusEnum.ACTIVE,
+                    'evadido': EnrollmentStatusEnum.DROPPED,
+                    'trancado': EnrollmentStatusEnum.SUSPENDED
                 }
-                discipline_status = discipline_status_map.get(
-                    row.get('discipline_status', 'em_andamento'),
-                    DisciplineStatusEnum.IN_PROGRESS
+                enrollment_status = enrollment_map.get(
+                    row.get('enrollment_status', 'ativo'),
+                    EnrollmentStatusEnum.ACTIVE
                 )
 
-                grade = Grade(
-                    student_id=students_dict[student_id_str],
-                    discipline_id=disciplines_dict[discipline_name],
-                    semester=str(row.get('semester', '')),
-                    final_grade=float(row['final_grade']) if pd.notna(row.get('final_grade')) else None,
-                    attendance_pct=float(row['attendance_pct']) if pd.notna(row.get('attendance_pct')) else None,
-                    payment_status=payment_status,
-                    discipline_status=discipline_status,
-                    course_evaluation=int(row['course_evaluation']) if pd.notna(row.get('course_evaluation')) else None
+                student = Student(
+                    student_id=student_id,
+                    course=str(row.get('course', '')),
+                    admission_type=admission_type,
+                    enrollment_status=enrollment_status
                 )
-                session.add(grade)
+                session.add(student)
+                session.flush()
+            students_dict[student_id] = student.id
 
-        session.commit()
-        logger.info(f"✅ Successfully saved {len(df)} records to database")
+    for _, row in df.iterrows():
+        student_id_str = str(row['student_id'])
+        discipline_name = row['discipline']
 
+        if (student_id_str in students_dict and
+            discipline_name and str(discipline_name) != 'nan' and
+            discipline_name in disciplines_dict):
 
-# Callbacks
+            payment_map = {
+                'pago': PaymentStatusEnum.PAID,
+                'pendente': PaymentStatusEnum.PENDING,
+                'atrasado': PaymentStatusEnum.OVERDUE
+            }
+            payment_status = payment_map.get(
+                row.get('payment_status', 'pendente'),
+                PaymentStatusEnum.PENDING
+            )
+
+            discipline_status_map = {
+                'aprovado': DisciplineStatusEnum.APPROVED,
+                'reprovado': DisciplineStatusEnum.FAILED,
+                'em_andamento': DisciplineStatusEnum.IN_PROGRESS
+            }
+            discipline_status = discipline_status_map.get(
+                row.get('discipline_status', 'em_andamento'),
+                DisciplineStatusEnum.IN_PROGRESS
+            )
+
+            grade = Grade(
+                student_id=students_dict[student_id_str],
+                discipline_id=disciplines_dict[discipline_name],
+                semester=str(row.get('semester', '')),
+                final_grade=float(row['final_grade']) if pd.notna(row.get('final_grade')) else None,
+                attendance_pct=float(row['attendance_pct']) if pd.notna(row.get('attendance_pct')) else None,
+                payment_status=payment_status,
+                discipline_status=discipline_status,
+                course_evaluation=int(row['course_evaluation']) if pd.notna(row.get('course_evaluation')) else None
+            )
+            session.add(grade)
+
+    session.commit()
+
 @app.callback(
     [Output("upload-status", "children"),
      Output("store-data", "data")],
@@ -519,8 +519,4 @@ def update_dashboard(data_json):
 
 
 if __name__ == "__main__":
-    print("🎓 Dashboard de Análise Acadêmica Universitária")
-    print("="*60)
-    print("\n🌐 Acesse o dashboard em: http://localhost:3000")
-    print("⚠️  Pressione Ctrl+C para parar o servidor\n")
     app.run(debug=True, port=3000)
