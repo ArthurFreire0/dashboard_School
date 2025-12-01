@@ -427,7 +427,7 @@ class DashboardBuilder:
             return html.Div()
 
         total_students = df['student_id'].nunique()
-        total_enrollments = len(df)
+        total_courses = df['course'].nunique() if 'course' in df.columns else 0
         avg_grade = df['final_grade'].mean()
         avg_attendance = df['attendance_pct'].mean()
         failure_rate = (df['discipline_status'] == 'reprovado').sum() / len(df) * 100 if len(df) > 0 else 0
@@ -458,9 +458,9 @@ class DashboardBuilder:
                 'color': '#3b82f6'
             },
             {
-                'title': 'Matrículas em Disciplinas',
-                'value': f'{total_enrollments:,}',
-                'icon': '📚',
+                'title': 'Cursos',
+                'value': f'{total_courses:,}',
+                'icon': '🎓',
                 'color': '#10b981'
             },
             {
