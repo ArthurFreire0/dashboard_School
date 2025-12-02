@@ -24,7 +24,6 @@ def normalize_str(value: object) -> str:
     s = s.replace("\ufeff", "").strip()
     s = remove_accents(s).lower()
     s = s.replace("\t", " ").replace("-", "_")
-    # Replace multiple consecutive spaces with single underscore
     s = re.sub(r'\s+', '_', s)
     return s
 
@@ -41,14 +40,12 @@ def try_read_csv_bytes(data: bytes) -> pd.DataFrame:
                 stream.seek(0)
                 df = pd.read_csv(stream, sep=sep, encoding=encoding, engine="python")
 
-                # Check if we got valid data (more than 1 column)
                 if len(df.columns) > 1:
                     print(f"✅ Successfully read CSV with encoding={encoding}, separator='{sep}'")
                     return df
             except Exception as e:
                 continue
 
-    # Last resort - try default pandas read
     stream.seek(0)
     return pd.read_csv(stream)
 
@@ -150,7 +147,6 @@ def process_university_data(df: pd.DataFrame) -> pd.DataFrame:
         elif "status" in col_lower and "disciplina" in col_lower:
             column_mapping[col] = "discipline_status"
         elif ("avaliacao" in col_lower and "curso" in col_lower) or ("nota" in col_lower and "curso" in col_lower):
-            # Redundant rule retained for robustness but will be overridden by the first condition
             column_mapping[col] = "course_evaluation"
         elif "status" in col_lower and "matricula" in col_lower:
             column_mapping[col] = "enrollment_status"

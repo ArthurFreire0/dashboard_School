@@ -39,7 +39,6 @@ def save_data_to_database(df):
                 session.flush()
             disciplines_dict[discipline_name] = discipline.id
 
-    # Process students
     students_dict = {}
     unique_students = df.drop_duplicates(subset=['student_id'])
 
@@ -283,7 +282,6 @@ def update_dashboard(data_json):
 
         admission_pie = dashboard.build_admission_type_pie(df)
         failure_bar = dashboard.build_failure_rate_by_discipline_bar(df)
-        attendance_scatter = dashboard.build_approval_vs_attendance_scatter(df)
         churn_gauge = dashboard.build_churn_risk_gauge(df)
         course_eval_gauge = dashboard.build_course_evaluation_gauge(df)
 
@@ -356,18 +354,6 @@ def update_dashboard(data_json):
             }),
 
             html.Div([
-                html.H2("📈 Análise: Frequência vs Nota Final",
-                       style={'fontSize': '20px', 'marginBottom': '15px', 'color': '#1e293b'}),
-                dcc.Graph(figure=attendance_scatter, config={'displayModeBar': False})
-            ], style={
-                'backgroundColor': '#ffffff',
-                'padding': '20px',
-                'borderRadius': '12px',
-                'boxShadow': '0 2px 8px rgba(0,0,0,0.1)',
-                'marginBottom': '30px'
-            }),
-
-            html.Div([
                 html.H2("🚨 Alunos em Alto Risco de Evasão",
                        style={'fontSize': '20px', 'marginBottom': '15px', 'color': '#1e293b'}),
                 churn_table
@@ -399,7 +385,6 @@ def update_dashboard(data_json):
         error_message = str(e)
 
         if "numeric" in error_message.lower() and "dtype" in error_message.lower():
-            # Erro de tipo de dados numéricos
             return html.Div([
                 html.Div([
                     html.H2("⚠️ Erro nos Dados Numéricos", style={'color': '#dc2626', 'marginBottom': '15px'}),
