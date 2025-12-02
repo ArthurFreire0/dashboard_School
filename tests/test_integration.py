@@ -2,7 +2,7 @@ import pytest
 import pandas as pd
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, scoped_session
-from dashboard_school.database.models import (
+from dashboard_school.modules.models import (
     Base, Student, Discipline, Grade,
     EnrollmentStatusEnum, DisciplineStatusEnum,
     PaymentStatusEnum, AdmissionTypeEnum

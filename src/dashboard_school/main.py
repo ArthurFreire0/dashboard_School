@@ -9,8 +9,8 @@ import pandas as pd
 from dash import Dash, Input, Output, State, html, dcc
 from dashboard_school.components.dashboard import DashboardBuilder
 from dashboard_school.components.layout import create_layout
-from dashboard_school.database.connection import init_db, SessionLocal
-from dashboard_school.database.models import Discipline, Student, AdmissionTypeEnum, EnrollmentStatusEnum, \
+from dashboard_school.modules.connection import init_db, SessionLocal
+from dashboard_school.modules.models import Discipline, Student, AdmissionTypeEnum, EnrollmentStatusEnum, \
     PaymentStatusEnum, DisciplineStatusEnum, Grade
 from src.dashboard_school.processing import try_read_csv_bytes, process_university_data
 
@@ -26,7 +26,7 @@ app.layout = create_layout()
 
 
 def save_data_to_database(df):
-    """Save processed data to database."""
+    """Save processed data to modules."""
     session = SessionLocal()
     disciplines_dict = {}
 
@@ -227,7 +227,7 @@ def handle_upload(contents, filename):
         try:
             save_data_to_database(df_processed)
         except Exception as e:
-            logger.warning(f"⚠️ Warning: Could not save to database: {e}")
+            logger.warning(f"⚠️ Warning: Could not save to modules: {e}")
 
         data_json = df_processed.to_json(date_format='iso', orient='split')
 
