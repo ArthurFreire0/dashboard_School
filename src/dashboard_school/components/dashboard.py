@@ -27,7 +27,6 @@ class DashboardBuilder:
 
         df = pd.DataFrame(store_data)
 
-        # Ensure numeric columns
         numeric_cols = ['final_grade', 'attendance_pct', 'course_evaluation']
         for col in numeric_cols:
             if col in df.columns:
@@ -138,82 +137,6 @@ class DashboardBuilder:
 
         return fig
 
-    def build_approval_vs_attendance_scatter(self, df: pd.DataFrame):
-        """Build scatter plot showing relationship between attendance and final grade."""
-        if df.empty or 'attendance_pct' not in df.columns or 'final_grade' not in df.columns:
-            return go.Figure()
-
-        df_plot = df.dropna(subset=['attendance_pct', 'final_grade'])
-
-        status_color_map = {
-            'aprovado': '#10b981',
-            'reprovado': '#ef4444',
-            'em_andamento': '#94a3b8'
-        }
-
-        status_label_map = {
-            'aprovado': 'Aprovado',
-            'reprovado': 'Reprovado',
-            'em_andamento': 'Em Andamento'
-        }
-
-        fig = go.Figure()
-
-        for status in ['aprovado', 'reprovado', 'em_andamento']:
-            df_status = df_plot[df_plot['discipline_status'] == status]
-            if not df_status.empty:
-                fig.add_trace(go.Scatter(
-                    x=df_status['attendance_pct'],
-                    y=df_status['final_grade'],
-                    mode='markers',
-                    name=status_label_map[status],
-                    marker=dict(
-                        color=status_color_map[status],
-                        size=8,
-                        opacity=0.6,
-                        line=dict(color='white', width=0.5)
-                    ),
-                    hovertemplate='<b>Frequência:</b> %{x:.1f}%<br>' +
-                                  '<b>Nota Final:</b> %{y:.1f}<br>' +
-                                  '<extra></extra>'
-                ))
-
-        fig.add_hline(y=6.0, line_dash="dash", line_color="gray",
-                     annotation_text="Média mínima (6.0)", annotation_position="right")
-        fig.add_vline(x=75.0, line_dash="dash", line_color="gray",
-                     annotation_text="Frequência mínima (75%)", annotation_position="top")
-
-        fig.update_layout(
-            title_font_size=18,
-            title_font_family=FONT_FAMILY,
-            xaxis_title='Frequência (%)',
-            yaxis_title='Nota Final',
-            font_family=FONT_FAMILY,
-            plot_bgcolor='rgba(0,0,0,0)',
-            paper_bgcolor='rgba(0,0,0,0)',
-            margin=dict(t=40, b=60, l=60, r=20),
-            xaxis=dict(
-                showgrid=True,
-                gridcolor='rgba(0,0,0,0.1)',
-                range=[0, 105]
-            ),
-            yaxis=dict(
-                showgrid=True,
-                gridcolor='rgba(0,0,0,0.1)',
-                range=[0, 10.5]
-            ),
-            legend=dict(
-                orientation="h",
-                yanchor="bottom",
-                y=1.02,
-                xanchor="right",
-                x=1
-            ),
-            height=500
-        )
-
-        return fig
-
     def calculate_student_churn_risk(self, df: pd.DataFrame):
         """Calculate churn risk for each student."""
         if df.empty or 'student_id' not in df.columns:
@@ -296,7 +219,6 @@ class DashboardBuilder:
         ).head(20)
 
         if high_risk.empty:
-            # If no high risk, show top risk students
             high_risk = churn_df.sort_values('churn_probability', ascending=False).head(10)
 
         high_risk = high_risk.copy()
@@ -363,22 +285,20 @@ class DashboardBuilder:
         if df.empty or 'course_evaluation' not in df.columns:
             avg_evaluation = 0
         else:
-            # Filter out null values
             df_with_eval = df[df['course_evaluation'].notna()]
             if df_with_eval.empty:
                 avg_evaluation = 0
             else:
                 avg_evaluation = df_with_eval['course_evaluation'].mean()
 
-        # Determine color and reference based on threshold
         if avg_evaluation >= 6:
-            bar_color = "#10b981"  # Green - Good
+            bar_color = "#10b981"
             delta_color = "green"
         elif avg_evaluation >= 5.5:
-            bar_color = "#f59e0b"  # Yellow/Orange - Warning
+            bar_color = "#f59e0b"
             delta_color = "orange"
         else:
-            bar_color = "#ef4444"  # Red - Bad
+            bar_color = "#ef4444"
             delta_color = "red"
 
         fig = go.Figure(go.Indicator(
@@ -432,23 +352,21 @@ class DashboardBuilder:
         avg_attendance = df['attendance_pct'].mean()
         failure_rate = (df['discipline_status'] == 'reprovado').sum() / len(df) * 100 if len(df) > 0 else 0
 
-        # Calculate average course evaluation
         if 'course_evaluation' in df.columns:
             df_with_eval = df[df['course_evaluation'].notna()]
             avg_evaluation = df_with_eval['course_evaluation'].mean() if not df_with_eval.empty else None
         else:
             avg_evaluation = None
 
-        # Determine color for evaluation based on threshold
         if avg_evaluation is not None:
             if avg_evaluation >= 6:
-                eval_color = '#10b981'  # Green - Good
+                eval_color = '#10b981'
             elif avg_evaluation >= 5.5:
-                eval_color = '#f59e0b'  # Yellow/Orange - Warning
+                eval_color = '#f59e0b'
             else:
-                eval_color = '#ef4444'  # Red - Bad
+                eval_color = '#ef4444'
         else:
-            eval_color = '#94a3b8'  # Gray - No data
+            eval_color = '#94a3b8'
 
         cards_data = [
             {
@@ -532,7 +450,6 @@ class DashboardBuilder:
         if df.empty:
             return dash_table.DataTable(data=[], columns=[])
 
-        # Select columns to display
         display_cols = ['student_id', 'course', 'semester', 'discipline', 'final_grade',
                        'attendance_pct', 'discipline_status', 'payment_status',
                        'course_evaluation']
