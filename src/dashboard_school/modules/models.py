@@ -12,28 +12,24 @@ LOCAL_TZ = ZoneInfo("America/Bahia")
 
 
 class EnrollmentStatusEnum(enum.Enum):
-    """Student enrollment status"""
     ACTIVE = "ativo"
     DROPPED = "evadido"
     SUSPENDED = "trancado"
 
 
 class DisciplineStatusEnum(enum.Enum):
-    """Discipline status"""
     APPROVED = "aprovado"
     FAILED = "reprovado"
     IN_PROGRESS = "em_andamento"
 
 
 class PaymentStatusEnum(enum.Enum):
-    """Payment status"""
     PAID = "pago"
     PENDING = "pendente"
     OVERDUE = "atrasado"
 
 
 class AdmissionTypeEnum(enum.Enum):
-    """Type of student admission"""
     EXTERNAL_TRANSFER = "transferencia_externa"
     INTERNAL_TRANSFER = "transferencia_interna"
     SCHOLARSHIP = "bolsista"
@@ -41,7 +37,6 @@ class AdmissionTypeEnum(enum.Enum):
 
 
 class Student(Base):
-    """Student model"""
     __tablename__ = 'students'
 
     id = Column(Integer, primary_key=True)
@@ -57,7 +52,6 @@ class Student(Base):
 
 
 class Discipline(Base):
-    """Discipline/Subject model"""
     __tablename__ = 'disciplines'
 
     id = Column(Integer, primary_key=True)
@@ -69,7 +63,6 @@ class Discipline(Base):
 
 
 class Grade(Base):
-    """Student grades and attendance model"""
     __tablename__ = 'grades'
 
     id = Column(Integer, primary_key=True)
@@ -89,7 +82,6 @@ class Grade(Base):
 
 
 class ChurnPrediction(Base):
-    """Churn prediction results"""
     __tablename__ = 'churn_predictions'
 
     id = Column(Integer, primary_key=True)
