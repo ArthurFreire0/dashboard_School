@@ -28,7 +28,6 @@ uv pip install -e .
 uv run -m dashboard_school.main
 ```
 
-
 ## Como usar
 1. Faça upload do seu arquivo CSV na interface.
 2. Use o `sample_data.csv` como exemplo (se disponível).
