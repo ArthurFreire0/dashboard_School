@@ -14,6 +14,12 @@ Ferramenta simples para analisar dados acadêmicos e identificar:
 
 ### Usando uv (recomendado)
 ```pwsh
+# Criar ambiente virtual
+uv venv
+.venv\Scripts\activate.ps1 # No Windows
+source .venv/bin/activate  # No Linux/Mac
+
+
 # Instalar dependências
 uv sync
 uv pip install -e .

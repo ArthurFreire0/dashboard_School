@@ -18,10 +18,7 @@ COLOR_PALETTE = {
 
 
 class DashboardBuilder:
-    """Build comprehensive university analytics dashboard."""
-
     def prepare_dataframe(self, store_data):
-        """Prepare and clean dataframe from store data."""
         if not store_data:
             return pd.DataFrame()
 
@@ -35,7 +32,6 @@ class DashboardBuilder:
         return df
 
     def build_admission_type_pie(self, df: pd.DataFrame):
-        """Build pie chart showing distribution of admission types."""
         if df.empty or 'admission_type' not in df.columns:
             return go.Figure()
 
@@ -78,7 +74,6 @@ class DashboardBuilder:
         return fig
 
     def build_failure_rate_by_discipline_bar(self, df: pd.DataFrame):
-        """Build bar chart showing failure rate by discipline (bottlenecks)."""
         if df.empty or 'discipline' not in df.columns:
             return go.Figure()
 
@@ -138,7 +133,6 @@ class DashboardBuilder:
         return fig
 
     def calculate_student_churn_risk(self, df: pd.DataFrame):
-        """Calculate churn risk for each student."""
         if df.empty or 'student_id' not in df.columns:
             return pd.DataFrame()
 
@@ -165,7 +159,6 @@ class DashboardBuilder:
         return pd.DataFrame(churn_data)
 
     def build_churn_risk_gauge(self, df: pd.DataFrame):
-        """Build gauge chart showing overall churn risk."""
         churn_df = self.calculate_student_churn_risk(df)
 
         if churn_df.empty:
@@ -208,7 +201,6 @@ class DashboardBuilder:
         return fig
 
     def build_churn_risk_table(self, df: pd.DataFrame):
-        """Build table showing students at high risk of churn."""
         churn_df = self.calculate_student_churn_risk(df)
 
         if churn_df.empty:
@@ -281,7 +273,6 @@ class DashboardBuilder:
         )
 
     def build_course_evaluation_gauge(self, df: pd.DataFrame):
-        """Build gauge chart showing average course evaluation with color indicators."""
         if df.empty or 'course_evaluation' not in df.columns:
             avg_evaluation = 0
         else:
@@ -320,9 +311,9 @@ class DashboardBuilder:
                 'borderwidth': 2,
                 'bordercolor': "gray",
                 'steps': [
-                    {'range': [0, 5.5], 'color': '#fecaca'},      # Red zone - Bad
-                    {'range': [5.5, 6], 'color': '#fed7aa'},      # Orange zone - Warning
-                    {'range': [6, 10], 'color': '#d1fae5'}        # Green zone - Good
+                    {'range': [0, 5.5], 'color': '#fecaca'},
+                    {'range': [5.5, 6], 'color': '#fed7aa'},
+                    {'range': [6, 10], 'color': '#d1fae5'}
                 ],
                 'threshold': {
                     'line': {'color': "#3b82f6", 'width': 4},
@@ -446,7 +437,6 @@ class DashboardBuilder:
         })
 
     def build_main_data_table(self, df: pd.DataFrame):
-        """Build main data table with all records."""
         if df.empty:
             return dash_table.DataTable(data=[], columns=[])
 

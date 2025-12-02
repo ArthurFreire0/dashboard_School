@@ -9,7 +9,6 @@ MINIMUM_ATTENDANCE = 75.0
 
 
 def remove_accents(text: str) -> str:
-    """Remove accents from text."""
     if not isinstance(text, str):
         text = str(text)
     nfkd = unicodedata.normalize("NFKD", text)
@@ -17,7 +16,6 @@ def remove_accents(text: str) -> str:
 
 
 def normalize_str(value: object) -> str:
-    """Normalize string values for comparison."""
     if pd.isna(value):
         return ""
     s = str(value)
@@ -29,7 +27,6 @@ def normalize_str(value: object) -> str:
 
 
 def try_read_csv_bytes(data: bytes) -> pd.DataFrame:
-    """Try to read CSV from bytes using different encodings and separators."""
     stream = io.BytesIO(data)
     encodings = ["utf-8-sig", "utf-8", "latin1", "cp1252", "iso-8859-1"]
     separators = [",", ";", "\t"]
@@ -51,7 +48,6 @@ def try_read_csv_bytes(data: bytes) -> pd.DataFrame:
 
 
 def map_admission_type(value) -> str:
-    """Map admission type to standard format."""
     if pd.isna(value):
         return "vestibular"
 
@@ -70,7 +66,6 @@ def map_admission_type(value) -> str:
 
 
 def map_enrollment_status(value) -> str:
-    """Map enrollment status to standard format."""
     if pd.isna(value):
         return "ativo"
 
@@ -87,7 +82,6 @@ def map_enrollment_status(value) -> str:
 
 
 def map_discipline_status(value) -> str:
-    """Map discipline status to standard format."""
     if pd.isna(value):
         return "em_andamento"
 
@@ -104,7 +98,6 @@ def map_discipline_status(value) -> str:
 
 
 def map_payment_status(value) -> str:
-    """Map payment status to standard format."""
     if pd.isna(value):
         return "pendente"
 
@@ -201,7 +194,6 @@ def process_university_data(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def calculate_churn_probability(student_data: pd.DataFrame) -> float:
-    """Calculate churn probability for a student based on their records."""
     if student_data.empty:
         return 0.0
 
@@ -220,9 +212,9 @@ def calculate_churn_probability(student_data: pd.DataFrame) -> float:
     if pd.notna(avg_attendance):
         if avg_attendance < 50:
             risk_score += 25
-        elif avg_attendance < 75:
+        elif avg_attendance < 70:
             risk_score += 15
-        elif avg_attendance < 85:
+        elif avg_attendance < 80:
             risk_score += 5
 
     payment_issues = (student_data["payment_status"] == "atrasado").sum()
@@ -247,7 +239,6 @@ def calculate_churn_probability(student_data: pd.DataFrame) -> float:
 
 
 def get_churn_risk_level(probability: float) -> str:
-    """Get risk level based on churn probability."""
     if probability >= 0.7:
         return "high"
     elif probability >= 0.4:

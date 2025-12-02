@@ -26,7 +26,6 @@ app.layout = create_layout()
 
 
 def save_data_to_database(df):
-    """Save processed data to modules."""
     session = SessionLocal()
     disciplines_dict = {}
 
@@ -128,7 +127,6 @@ def save_data_to_database(df):
     [State("upload-csv", "filename")]
 )
 def handle_upload(contents, filename):
-    """Handle CSV file upload."""
     if not contents:
         return "", []
 
@@ -271,7 +269,6 @@ def handle_upload(contents, filename):
     [Input("store-data", "data")]
 )
 def update_dashboard(data_json):
-    """Update dashboard with processed data."""
     if not data_json:
         return html.Div()
 

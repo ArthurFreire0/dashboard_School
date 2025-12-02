@@ -71,7 +71,6 @@ A001,Engenharia,2024.1,Cálculo,8.0,90.0,pago,aprovado,8,ativo"""
         assert len(df) == 1
         assert 'A001' in df.iloc[0].values
 
-        # Test Latin1
         latin1_bytes = csv_content.encode('latin1')
         df = try_read_csv_bytes(latin1_bytes)
         assert len(df) == 1
@@ -81,7 +80,7 @@ A001,Engenharia,2024.1,Cálculo,8.0,90.0,pago,aprovado,8,ativo"""
 A001;Engenharia;2024.1;Cálculo;8.0"""
 
         df = try_read_csv_bytes(csv_semicolon.encode('utf-8'))
-        assert len(df.columns) > 1  # Should properly parse columns
+        assert len(df.columns) > 1
 
         csv_tab = """id_aluno\tcurso\tperiodo_letivo\tdisciplina\tnota_final
 A001\tEngenharia\t2024.1\tCálculo\t8.0"""
